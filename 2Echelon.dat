@@ -1,0 +1,17 @@
+.9
+10
+.95 .05
+11 10
+10
+100 -100
+7
+2 3 9 10 13 18 22
+.1 .2 .25 .1 .2 .1 .05
+#Discount Rate (beta)
+#Number of Period (period)
+#Incremental Holding cost (h)
+#Capacity Constraints (K)
+#Penalty Cost (p)
+#Upper and Lower Bounds of Decision Variables (UB DB)
+#Number of Demands (D_len)
+#Demand Distribution (D P)
