@@ -67,11 +67,11 @@ int x[2], X[2];
 
 double L(int Y[])
 {
-	//TODO:	Given a decison Y[N], this function tells its holding
+	//TODO: Given a decison Y[N], this function tells its holding 
 	//	and penalty costs.
-	//VAR:	ED E(D)
-	//	EDYp E[max(D-Y,0)]
-	// 	pen_hol p+h_1+h_2+...+h_N
+	//VAR:	ED		E(D)
+	//	EDYp		E[max(D-Y,0)]
+	//	pen_hol		p+h_1+h_2+...+h_N
 
 	int i;
 	double res = 0, ED = 0, pen_hol = p, EDYp = 0;
@@ -89,7 +89,7 @@ double L(int Y[])
 
 double J(int Y[], int prd)
 {
-	//TODO: Given a decision Y[N] and current period, this
+	//TODO: Given a decision Y[N] and the current period, this
 	//	function tells the value of objective function.
 	//VAR:	EV		E[V_n-1(Y-D)]
 
@@ -131,8 +131,9 @@ void DP(int X0, int X1, int prd)
 
 void init()
 {
-	//TODO:	This function initializes all variables including the
-	//	value function array.
+	//TODO: This function initialize all variables including the value
+	//	function array.
+	//	This part can be changed in order to read data from a file.
 
 	int i, j, k;
 	FILE * fp = fopen("2Echelon.dat", "r");
@@ -145,21 +146,6 @@ void init()
 	for (i = 0; i < D_len; i++) {
 		fscanf(fp, "%lf", &P[i]);
 	}
-	//double tmpP[7] = {
-	//	.1, .2, .25, .1, .2, .1, .05
-	//};
-	//int tmpD[7] = {
-	//	2, 3, 9, 10, 13, 18, 22
-	//};
-	//beta = .9; 	period = 10;
-	//h[0] = .95;	h[1] = 1 - h[0];
-	//K[0] = 11;	K[1] = 10;
-	//p = 10;		D_len = 7;
-	//UB = 100;	LB = -100;
-	//for (i = 0; i < D_len; i++) {
-	//	D[i] = tmpD[i];
-	//	P[i] = tmpP[i];
-	//}
 	for (i = 0; i < MAX_PERIOD; i++) {
 		for (j = 0; j < MAX_X *2; j++) {
 			for (k = 0; k < MAX_X * 2; k++) {
@@ -174,7 +160,7 @@ int main(int argc, const char *argv[])
 	int i, j, k;
 	init();
 
-	//TODO:	k iterates through periods; i and j through all possible states
+	//TODO: k iterates through periods; i and j through all possible states
 	for (k = 1; k <= period; k++) {
 		for (i = LB; i <= UB; i++) {
 			for (j = LB; j <= UB; j++) {
@@ -183,7 +169,7 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	//TODO:	read installation inventory and print the optimal policy
+	//TODO: read installation inventory and print the optimal policy
 	while (scanf("%d%d", &x[0], &x[1]) != EOF) {
 		X[0] = x[0]; 	X[1] = x[0] + x[1];
 		Ending[0] = Retrieve(Plc, period, X[0], X[1])[0];
