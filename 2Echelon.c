@@ -48,10 +48,11 @@ double h[N];
 //Penalty Cost
 double p;
 
-//Demand Distribution
+//Demand Distribution and Expected Demand
 int D_len;
 int D[MAX_D_LENGTH];
 double P[MAX_D_LENGTH];
+double ED = 0;
 
 //Capacity Constraint
 int K[N];
@@ -69,14 +70,12 @@ double L(int Y[])
 {
 	//TODO: Given a decison Y[N], this function tells its holding 
 	//	and penalty costs.
-	//VAR:	ED		E(D)
-	//	EDYp		E[max(D-Y,0)]
+	//VAR:	EDYp		E[max(D-Y,0)]
 	//	pen_hol		p+h_1+h_2+...+h_N
 
 	int i;
 	double res = 0, ED = 0, pen_hol = p, EDYp = 0;
 	for (i = 0; i < D_len; i++) {
-		ED += D[i] * P[i];
 		EDYp += MAX(D[i]-Y[0], 0) * P[i];
 	}
 	for (i = 0; i < N; i++) {
@@ -145,6 +144,9 @@ void init()
 	}
 	for (i = 0; i < D_len; i++) {
 		fscanf(fp, "%lf", &P[i]);
+	}
+	for (i = 0; i < D_len; i++) {
+		ED += D[i] * P[i];
 	}
 	for (i = 0; i < MAX_PERIOD; i++) {
 		for (j = 0; j < MAX_X *2; j++) {
