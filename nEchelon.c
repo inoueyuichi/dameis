@@ -222,7 +222,7 @@ void set_YUB(int X[], int Y_UB[])
 	for (i = 0; i < N - 1; i++) {
 		Y_UB[i] = MIN(X[i+1], X[i] + K[i]);
 	}
-	Y_UB[N] = X[N] + K[N];
+	Y_UB[N-1] = X[N-1] + K[N-1];
 }
 
 void perm_Y(int prd, int X[], int Y_UB[], int idx, int res[])
