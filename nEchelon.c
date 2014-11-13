@@ -134,6 +134,8 @@ void init()
 
 double get_value(int prd, int X[])
 {
+	//TODO:	This function gets value from the value function.
+
 	int lvl = 0;
 	tree_node * curr = & V[prd];
 	while (lvl < N) {
@@ -145,6 +147,8 @@ double get_value(int prd, int X[])
 
 void set_value(int prd, int X[], double tgt)
 {
+	//TODO: This function sets value in the value function.
+
 	int lvl = 0;
 	tree_node * curr = & V[prd];
 	while (lvl < N) {
@@ -154,19 +158,10 @@ void set_value(int prd, int X[], double tgt)
 	curr -> value = tgt;
 }
 
-double get_policy(int ech, int X[])
-{
-	int lvl = 0;
-	tree_node * curr = & Plc[ech];
-	while (lvl < N) {
-		curr = curr -> next;
-		curr += (X[lvl++] + MAX_X/2);
-	}
-	return curr->Plc;
-}
-
 void set_plc(int ech, int X[], int tgt)
 {
+	//TODO:	This function sets an echelon's policy.
+
 	int lvl = 0;
 	tree_node * curr = & Plc[ech];
 	while (lvl < N) {
@@ -218,6 +213,9 @@ double J(int prd, int Y[])
 
 void set_YUB(int X[], int Y_UB[])
 {
+	//TODO:	Given a set of state variables X[], this function
+	//	calculates decision variables' upper bounds.
+
 	int i;
 	for (i = 0; i < N - 1; i++) {
 		Y_UB[i] = MIN(X[i+1], X[i] + K[i]);
@@ -227,6 +225,10 @@ void set_YUB(int X[], int Y_UB[])
 
 void perm_Y(int prd, int X[], int Y_UB[], int idx, int res[])
 {
+	//TODO:	This function permutates among all decision variables
+	//	and then chooses the smallest objective value function
+	//	to be stored in V.
+
 	int i;
 	double tmpJ;
 	if (idx != N - 1) {
@@ -253,6 +255,9 @@ void perm_Y(int prd, int X[], int Y_UB[], int idx, int res[])
 
 void DP(int prd, int X[])
 {
+	//TODO:	This function receives a set of state variables and then
+	//	iterates the value function for one step.
+
 	int Y[MAX_N], Y_UB[MAX_N], res[MAX_N];
 	set_YUB(X, Y_UB);
 	perm_Y(prd, X, Y_UB, 0, res);
@@ -260,6 +265,9 @@ void DP(int prd, int X[])
 
 void perm_X(int prd, int idx, int res[])
 {
+	//TODO:	This function permutates among all possible state
+	//	variables.
+
 	if (idx != N - 1) {
 		for (res[idx] = LB; res[idx] < UB; res[idx]++) {
 			perm_X(prd, idx+1, res);
@@ -277,6 +285,8 @@ int main(int argc, const char *argv[])
 {
 	int i, tmpX[MAX_X];
 	init();
+
+	//TODO:	Iterate through periods
 	for (i = 0; i < period; i++) {
 		perm_X(i, 0, tmpX);
 	}
