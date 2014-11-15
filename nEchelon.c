@@ -118,9 +118,14 @@ void init()
 
 	int i;
 	FILE * fp = fopen("nEchelon.dat", "r");
-	fscanf(fp, "%lf%d%d%lf%lf%d%d%lf%d%d%d", &beta, &N,
-			&period, &h[0], &h[1], &K[0], &K[1],
-			&p, &UB, &LB, &D_len);
+	fscanf(fp, "%lf%d%d", &beta, &N, &period);
+	for (i = 0; i < N; i++) {
+		fscanf(fp, "%lf", &h[i]);
+	}
+	for (i = 0; i < N; i++) {
+		fscanf(fp, "%d", &K[i]);
+	}
+	fscanf(fp, "%lf%d%d%d", &p, &UB, &LB, &D_len);
 	for (i = 0; i < D_len; i++) {
 		fscanf(fp, "%d", &D[i]);
 	}
