@@ -296,6 +296,10 @@ void perm_X(int prd, int idx, int res[])
 
 void show_result(int X[])
 {
+	//TODO:	This function shows the optimal policy for a given 
+	//	set of initial installation inventory.
+	//VAR:	tmpPlc		optimal policy
+
 	int i, tmpPlc[MAX_N];
 	for (i = 0; i < N; i++) {
 		tmpPlc[i] = get_plc(i, X);
