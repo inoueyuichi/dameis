@@ -69,7 +69,7 @@ void init_V(tree_node * arr, int level, int prd)
 
 	int i;
 	if (level == 0) {
-		for (i = 0; i < period; i++) {
+		for (i = 0; i <= period; i++) {
 			arr[i].next = (tree_node *) calloc(MAX_X, sizeof(tree_node));
 			init_V(arr[i].next, level + 1, i);
 		}
@@ -158,6 +158,19 @@ void set_value(int prd, int X[], double tgt)
 	curr -> value = tgt;
 }
 
+int get_plc(int ech, int X[])
+{
+	//TODO:	This function gets an echelon's policy.
+
+	int lvl = 0;
+	tree_node * curr = & Plc[ech];
+	while (lvl < N) {
+		curr = curr -> next;
+		curr += (X[lvl++] + MAX_X/2);
+	}
+	return curr -> Plc;
+}
+
 void set_plc(int ech, int X[], int tgt)
 {
 	//TODO:	This function sets an echelon's policy.
@@ -233,13 +246,13 @@ void perm_Y(int prd, int X[], int Y_UB[], int idx, int res[])
 	double tmpJ;
 	if (idx != N - 1) {
 		for (res[idx] = X[idx];
-			       	res[idx] < Y_UB[idx]; res[idx]++) {
+			       	res[idx] <= Y_UB[idx]; res[idx]++) {
 			perm_Y(prd, X, Y_UB, idx+1, res);
 		}
 	}
 	else {
 		for (res[idx] = X[idx];
-			       	res[idx] < Y_UB[idx]; res[idx]++) {
+			       	res[idx] <= Y_UB[idx]; res[idx]++) {
 			tmpJ = J(prd, res);
 			if (get_value(prd, X) > tmpJ) {
 				set_value(prd, X, tmpJ);
@@ -269,7 +282,7 @@ void perm_X(int prd, int idx, int res[])
 	//	variables.
 
 	if (idx != N - 1) {
-		for (res[idx] = LB; res[idx] < UB; res[idx]++) {
+		for (res[idx] = LB; res[idx] <= UB; res[idx]++) {
 			perm_X(prd, idx+1, res);
 		}
 	}
@@ -281,14 +294,52 @@ void perm_X(int prd, int idx, int res[])
 	return;
 }
 
+void show_result(int X[])
+{
+	int i, tmpPlc[MAX_N];
+	for (i = 0; i < N; i++) {
+		tmpPlc[i] = get_plc(i, X);
+	}
+	for (i = 0; i < N; i++) {
+		printf("%d\t", (i==0)?X[0]:(X[i]-X[i-1]));
+	}
+	for (i = 0; i < N; i++) {
+		printf("%d\t", X[i]);
+	}
+	for (i = 0; i < N; i++) {
+		printf("%d\t", tmpPlc[i] - X[i]);
+	}
+	for (i = 0; i < N; i++) {
+		printf("%d\t", tmpPlc[i]);
+	}
+	printf("%.2lf\n", get_value(period, X));
+}
+
 int main(int argc, const char *argv[])
 {
-	int i, tmpX[MAX_X];
+	int i, flag = 1, tmpX[MAX_X],
+	    X[MAX_N], x[MAX_N];
 	init();
 
 	//TODO:	Iterate through periods
-	for (i = 0; i < period; i++) {
+	for (i = 1; i <= period; i++) {
 		perm_X(i, 0, tmpX);
+	}
+
+	//TODO: Read installation inventories and print the optimal policy
+	while (flag != EOF) {
+		for (i = 0; i < N; i++) {
+			flag = scanf("%d", &x[i]);
+			if (i == 0) {
+				X[0] = x[0];
+			}
+			else {
+				X[i] = X[i-1]+x[i];
+			}
+		}
+		if (flag != EOF) {
+			show_result(X);
+		}
 	}
 	return 0;
 }
