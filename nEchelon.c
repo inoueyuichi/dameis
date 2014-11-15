@@ -114,7 +114,6 @@ void init()
 {
 	//TODO: This function initialize all variables including the value
 	//	function array.
-	//	This part can be changed in order to read data from a file.
 
 	int i;
 	FILE * fp = fopen("nEchelon.dat", "r");
@@ -292,7 +291,7 @@ void perm_X(int prd, int idx, int res[])
 		}
 	}
 	else {
-		for (res[idx] = LB; res[idx] < UB; res[idx]++) {
+		for (res[idx] = LB; res[idx] <= UB; res[idx]++) {
 			DP(prd, res);
 		}
 	}
