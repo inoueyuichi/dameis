@@ -130,7 +130,7 @@ void DP(int X0, int X1, int prd)
 
 void init()
 {
-	//TODO: This function initialize all variables including the value
+	//TODO: This function initialize all variables EXCLUDING the value
 	//	function array.
 	//	This part can be changed in order to read data from a file.
 
@@ -153,6 +153,8 @@ void init()
 
 void clear_V()
 {
+	//TODO:	This function initializes the value function.
+
 	int i, j, k;
 	for (i = 0; i < MAX_PERIOD; i++) {
 		for (j = 0; j < MAX_X *2; j++) {
@@ -165,6 +167,9 @@ void clear_V()
 
 double diff(int X1, int X2)
 {
+	//TODO:	Given states variables, this function calculates 
+	//	the difference.
+
 	double res = 0;
 	res += Retrieve(V, period, X1 + 1, X2 + 1);
 	res -= Retrieve(V, period, X1, X2 + 1);
@@ -174,9 +179,7 @@ double diff(int X1, int X2)
 }
 
 int main(int argc, const char *argv[])
-{
-	int i, j, k;
-	double delta;
+{ int i, j, k; double delta;
 	init();
 
 	for (K[0] = 5; K[0] <= 20; K[0]++) {
