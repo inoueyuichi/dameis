@@ -74,7 +74,7 @@ double L(int Y[])
 	//	pen_hol		p+h_1+h_2+...+h_N
 
 	int i;
-	double res = 0, ED = 0, pen_hol = p, EDYp = 0;
+	double res = 0, pen_hol = p, EDYp = 0;
 	for (i = 0; i < D_len; i++) {
 		EDYp += MAX(D[i]-Y[0], 0) * P[i];
 	}
@@ -123,6 +123,9 @@ void DP(int X0, int X1, int prd)
 				Retrieve(V, prd, X0, X1) = tmpJ;
 				Retrieve(Plc, prd, X0, X1)[0] = Y[0];
 				Retrieve(Plc, prd, X0, X1)[1] = Y[1];
+			}
+			else {
+				break;
 			}
 		}
 	}
