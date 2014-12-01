@@ -94,7 +94,7 @@ double J1(int Y1, int prd)
 	return l(Y1) - h[1] * Y1 + beta * tmp;
 }
 
-double J2(int X1_star, int Y2, int prd)
+double J2(int Y2, int prd)
 {
 	int i;
 	double tmp = 0;
@@ -126,7 +126,7 @@ int DP2(int X2, int X1_star, int prd)
 	int Y2, tmpPlc;
 	double tmpJ;
 	for (Y2 = X2; 1; Y2 ++) {
-		tmpJ = J2(X1_star, Y2, prd);
+		tmpJ = J2(Y2, prd);
 		tmpJ += delta(X2, X1_star, prd);
 		if (tmpJ < V(2, prd, X2)) {
 			V(2, prd, X2) = tmpJ;
@@ -200,7 +200,7 @@ int main(int argc, const char *argv[])
 		E[1] = MAX(X[1], Plc(2, X[1]));
 		printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%lf\n", X[0], X[1] - X[0],
 				X[0], X[1], E[0] - X[0], E[1] - X[1], E[0], E[1],
-				V(1, period, X[0])+V(1,period, X[1]));
+				V(1, period, X[0])+V(2,period, X[1]));
 	}
 	return 0;
 }
