@@ -23,9 +23,18 @@
 #define MAX_D_LENGTH		30
 #define N			2
 #define INF			99999999
+#define MIN(x,y)		\
+	((x<y)?x:y)
+#define MAX(x,y)		\
+	((x>y)?x:y)
 
 //Value Function
 double V[2][MAX_PERIOD][MAX_X*2];
+int Plc[2][MAX_X*2];
+#define V(ech,prd,x)		\
+	(V[ech-1][prd][MAX_X+x])
+#define Plc(ech,x)		\
+	(Plc[ech-1][MAX_X+x])
 
 //Incremental Holding Cost
 double h[N];
@@ -37,7 +46,6 @@ double p;
 int D_len;
 int D[MAX_D_LENGTH];
 double P[MAX_D_LENGTH];
-double ED = 0;
 
 //Discount Factor
 double beta;
@@ -45,75 +53,110 @@ double beta;
 //Lower & Upper Bound of X, Number of Periods
 int LB, UB, period;
 
-double Jn1(int Yn1, int prd)
+double l(int x)
 {
-	int i;
-	double res, tmpexp = 0, tmp;
-	res = h[0] * (Yn1 + ED);
+	int i, H = h[0]+h[1];
+	double res = 0, tmp;
 	for (i = 0; i < D_len; i++) {
-		tmp = D[i] - Yn1;
-		tmpexp += (tmp > 0) ? P[i]*tmp : 0;
+		tmp = x - D[i];
+		if (tmp > 0) {
+			res += P[i] * H * tmp;
+		}
+		else {
+			res -= P[i] * p * tmp;
+		}
 	}
-	res += (p+h[0]+h[1]) * tmpexp;
-	tmpexp = 0;
-	for (i = 0; i < D_len; i++) {
-		tmpexp += P[i]*V[0][prd-1][Yn1-D[i]+MAX_X];
-	}
-	return res + beta * tmpexp;
+	return res;
 }
 
-double Jn2(int Yn2, int prd)
+double delta(int X2, int X1_star, int prd)
 {
 	int i;
-	double res, tmpexp = 0;
-	res = h[1] * (Yn2 - ED);
-	for (i = 0; i < D_len; i++) {
-		tmpexp += P[i]*V[1][prd-1][Yn2-D[i]+MAX_X];
+	double res, tmp = 0;
+	if (X2 >= X1_star) {
+		return 0;
 	}
-	return res + beta * tmpexp;
+	res = l(X2) -h[1]*(X2-X1_star) - l(X1_star);
+	for (i = 0; i < D_len; i++) {
+		tmp += P[i] * V(1, prd-1, X2-D[i]);
+		tmp -= P[i] * V(1, prd-1, X1_star-D[i]);
+	}
+	return res + beta * tmp;
 }
 
-int policy1(int Xn1, int Xn2, int prd)
+double J1(int Y1, int prd)
 {
-	int zn1 = Xn2, Yn1;
-	double tmp, tmpJ = INF;
-	for (Yn1 = Xn1; Yn1 <= Xn2; Yn1++) {
-		tmp = Jn1(Yn1, prd);
-		if (tmp < tmpJ) {
-			tmpJ = tmp;
-			zn1 = Yn1;
+	int i;
+	double tmp = 0;
+	for (i = 0; i < D_len; i++) {
+		tmp += P[i] * V(1, prd-1, Y1-D[i]);
+	}
+	return l(Y1) - h[1] * Y1 + beta * tmp;
+}
+
+double J2(int X1_star, int Y2, int prd)
+{
+	int i;
+	double tmp = 0;
+	for (i = 0; i < D_len; i++) {
+		tmp += P[i] * V(2,prd-1, Y2-D[i]);
+	}
+	return h[1]*Y2 + beta * tmp;
+}
+
+int DP1(int X1, int prd)
+{
+	int Y1, tmpPlc;
+	double tmpJ;
+	for (Y1 = X1; 1; Y1 ++) {
+		tmpJ = J1(Y1, prd);
+		if (tmpJ < V(1, prd, X1)) {
+			V(1, prd, X1) = tmpJ;
+			tmpPlc = Y1;
 		}
 		else {
 			break;
 		}
 	}
-	return (zn1 < Xn2) ? zn1 : Xn2;
+	return tmpPlc;
 }
 
-int policy2(int Xn2, int prd)
+int DP2(int X2, int X1_star, int prd)
 {
-	int zn2, Yn2;
-	double tmp, tmpJ = INF;
-	for (Yn2 = Xn2; 1; Yn2++) {
-		tmp = Jn2(Yn2, prd);
-		if (tmp < tmpJ) {
-			tmpJ = tmp;
-			zn2 = Yn2;
+	int Y2, tmpPlc;
+	double tmpJ;
+	for (Y2 = X2; 1; Y2 ++) {
+		tmpJ = J2(X1_star, Y2, prd);
+		tmpJ += delta(X2, X1_star, prd);
+		if (tmpJ < V(2, prd, X2)) {
+			V(2, prd, X2) = tmpJ;
+			tmpPlc = Y2;
 		}
 		else {
 			break;
 		}
 	}
-	return zn2;
+	return tmpPlc;
 }
 
-void DP(int Xn1, int Xn2, int prd)
+void DP(int prd)
 {
-	int Yn1, Yn2;
-	Yn1 = policy1(Xn1, Xn2, prd);
-	Yn2 = policy2(Xn2, prd);
-	V[0][prd][Xn1+MAX_X] = Jn1(Yn1, prd);
-	V[1][prd][Xn2+MAX_X] = Jn2(Yn2, prd);
+	int X1, X2, tmpPlc, X1_star = INF;
+	for (X1 = LB; X1 <= UB; X1++) {
+		tmpPlc = DP1(X1, prd);
+		if (tmpPlc < X1_star) {
+			X1_star = tmpPlc;
+		}
+		if (prd == period) {
+			Plc(1, X1) = tmpPlc;
+		}
+	}
+	for (X2 = LB; X2 <= UB; X2++) {
+		tmpPlc = DP2(X2, X1_star, prd);
+		if (prd == period) {
+			Plc(2, X2) = tmpPlc;
+		}
+	}
 }
 
 void init()
@@ -133,41 +176,31 @@ void init()
 	for (i = 0; i < D_len; i++) {
 		fscanf(fp, "%lf", &P[i]);
 	}
-	for (i = 0; i < D_len; i++) {
-		ED += D[i] * P[i];
-	}
-	for (i = 0; i < MAX_PERIOD; i++) {
-		for (j = 0; j < MAX_X *2; j++) {
-			V[0][i][j] = V[1][i][j] = 
-				(i == 0) ? 0 : INF;
+	for (i = 0; i < N; i++) {
+		for (j = 0; j < MAX_PERIOD; j++) {
+			for (k = 0; k < MAX_X*2; k++) {
+				V[i][j][k] = (j == 0) ? 0: INF;
+			}
 		}
 	}
 }
 
 int main(int argc, const char *argv[])
 {
-	int i, j, k, X[2], Ending[2];
-	double cost;
+	int prd, X[2], E[2];
 	init();
 
-	//TODO: k iterates through periods; i and j through all possible states
-	for (k = 1; k <= period; k++) {
-		for (i = LB; i <= UB; i++) {
-			for (j = LB; j <= UB; j++) {
-				DP(i, j, k);
-			}
-		}
+	for (prd = 1; prd <= period; prd++) {
+		DP(prd);
 	}
 
-	//TODO: read installation inventory and print the optimal policy
 	while (scanf("%d%d", &X[0], &X[1]) != EOF) {
 		X[1] += X[0];
-		Ending[0] = policy1(X[0], X[1], period);
-		Ending[1] = policy2(X[1], period);
-		cost = V[0][period][X[0]+MAX_X] + V[1][period][X[1]+MAX_X];
-		printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%lf\n", X[0], X[1]-X[0],
-				X[0], X[1], Ending[0] - X[0], Ending[1] - X[1],
-				Ending[0], Ending[1], cost);
+		E[0] = MAX(X[0], MIN(X[1], Plc(1, X[0])));
+		E[1] = MAX(X[1], Plc(2, X[1]));
+		printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%lf\n", X[0], X[1] - X[0],
+				X[0], X[1], E[0] - X[0], E[1] - X[1], E[0], E[1],
+				V(1, period, X[0])+V(1,period, X[1]));
 	}
 	return 0;
 }
