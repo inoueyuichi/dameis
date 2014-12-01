@@ -55,6 +55,9 @@ int LB, UB, period;
 
 double l(int x)
 {
+	//TODO:	This function calculates the l-function value.
+	//	l(x)=E[(h1+h2)*max(x-D,0)+p*max(D-x,0)]
+	
 	int i, H = h[0]+h[1];
 	double res = 0, tmp;
 	for (i = 0; i < D_len; i++) {
@@ -71,6 +74,8 @@ double l(int x)
 
 double delta(int X2, int X1_star, int prd)
 {
+	//TODO:	This function calculates the induced penalty cost.
+
 	int i;
 	double res, tmp = 0;
 	if (X2 >= X1_star) {
@@ -86,6 +91,8 @@ double delta(int X2, int X1_star, int prd)
 
 double J1(int Y1, int prd)
 {
+	//TODO:	This function returns the obj-func value of echelon 1.
+
 	int i;
 	double tmp = 0;
 	for (i = 0; i < D_len; i++) {
@@ -96,6 +103,8 @@ double J1(int Y1, int prd)
 
 double J2(int Y2, int prd)
 {
+	//TODO:	This function returns the obj-func value of echelon 2.
+
 	int i;
 	double tmp = 0;
 	for (i = 0; i < D_len; i++) {
@@ -106,6 +115,9 @@ double J2(int Y2, int prd)
 
 int DP1(int X1, int prd)
 {
+	//TODO:	Given a period, this function iterates the first echelon's
+	//	value function for one step.
+
 	int Y1, tmpPlc;
 	double tmpJ;
 	for (Y1 = X1; 1; Y1 ++) {
@@ -123,6 +135,9 @@ int DP1(int X1, int prd)
 
 int DP2(int X2, int X1_star, int prd)
 {
+	//TODO:	Given a period, this function iterates the second echelon's
+	//	value function for one step.
+
 	int Y2, tmpPlc;
 	double tmpJ;
 	for (Y2 = X2; 1; Y2 ++) {
@@ -141,6 +156,8 @@ int DP2(int X2, int X1_star, int prd)
 
 void DP(int prd)
 {
+	//TODO:	This function finishes all iterations under a certain period.
+
 	int X1, X2, tmpPlc, X1_star = INF;
 	for (X1 = LB; X1 <= UB; X1++) {
 		tmpPlc = DP1(X1, prd);
@@ -190,10 +207,12 @@ int main(int argc, const char *argv[])
 	int prd, X[2], E[2];
 	init();
 
+	//TODO:	iterate through all periods
 	for (prd = 1; prd <= period; prd++) {
 		DP(prd);
 	}
 
+	//TODO:	output result.
 	while (scanf("%d%d", &X[0], &X[1]) != EOF) {
 		X[1] += X[0];
 		E[0] = MAX(X[0], MIN(X[1], Plc(1, X[0])));
