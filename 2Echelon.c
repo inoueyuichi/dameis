@@ -104,7 +104,6 @@ double J(int Y[], int prd)
 	return res;
 }
 
-
 void DP(int X0, int X1, int prd)
 {
 	//TODO:	Given the current period prd, the state variables X0 and X1,
@@ -123,9 +122,6 @@ void DP(int X0, int X1, int prd)
 				Retrieve(V, prd, X0, X1) = tmpJ;
 				Retrieve(Plc, prd, X0, X1)[0] = Y[0];
 				Retrieve(Plc, prd, X0, X1)[1] = Y[1];
-			}
-			else {
-				break;
 			}
 		}
 	}
