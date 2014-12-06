@@ -21,9 +21,9 @@
 
 
 #define MAX_PERIOD		100
-#define MAX_X			300
+#define MAX_X			200
 #define MAX_D_LENGTH		30
-#define MAX_LAMBDA		100
+#define MAX_LAMBDA		20
 #define N			2
 #define INF			99999999
 #define MAX(x,y)		((x>y)?x:y)
@@ -93,13 +93,10 @@ double Ln(int X[], double lambda[], int prd)
 	int Y[2];
 	double res = INF, tmp;
 	for (Y[0] = X[0]; Y[0] <= X[1]; Y[0]++) {
-		for (Y[1] = X[1]; 1; Y[1]++) {
+		for (Y[1] = X[1]; Y[1] <= UB; Y[1]++) {
 			tmp = Jn(X, Y, lambda, prd);
 			if (tmp < res) {
 				res = tmp;
-			}
-			else {
-				break;
 			}
 		}
 	}
@@ -110,13 +107,10 @@ void DP(int X[], int prd)
 {
 	double lambda[2], tmp;
 	for (lambda[0] = 0; lambda[0] <= MAX_LAMBDA; lambda[0] += 1) {
-		for (lambda[1] = 0; lambda[0] <= MAX_LAMBDA; lambda[1] += 1) {
+		for (lambda[1] = 0; lambda[1] <= MAX_LAMBDA; lambda[1] += 1) {
 			tmp = Ln(X, lambda, prd);
 			if (tmp > Retrieve(V, prd, X[0], X[1])) {
 				Retrieve(V, prd, X[0], X[1]) = tmp;
-			}
-			else {
-				break;
 			}
 		}
 	}
@@ -133,7 +127,6 @@ void init()
 	fscanf(fp, "%lf%d%lf%lf%d%d%lf%d%d%d", &beta,
 			&period, &h[0], &h[1], &K[0], &K[1],
 			&p, &UB, &LB, &D_len);
-	UB = 250;	LB = -250;
 	for (i = 0; i < D_len; i++) {
 		fscanf(fp, "%d", &D[i]);
 	}
