@@ -18,12 +18,12 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 
 #define MAX_PERIOD		100
 #define MAX_X			200
 #define MAX_D_LENGTH		30
-#define MAX_LAMBDA		20
 #define N			2
 #define INF			99999999
 #define MAX(x,y)		((x>y)?x:y)
@@ -103,17 +103,101 @@ double Ln(int X[], double lambda[], int prd)
 	return res;
 }
 
+double btlinsearch(double delta_x[], int X[], double lambda[], int prd)
+{
+	//TODO:	backtracking line search
+	/*Backtracking line search:
+	 	given a descent direction delta_x
+	 	0< Alpha<.5; 0<Beta<1; t<-1
+		while f(x+t*delta_x) > f(x) + Alpha*t*gradient(f)*delta_x
+	 		t<-Beta*t
+	 */
+	double Alpha = .25, Beta = .5, t = 2,
+	       tlambda[2], gradf[2], step,
+	       dlambda[2], gradlen;
+	//differentiation over the first variable
+	if (lambda[0] == 0) {
+		dlambda[0] = .01;
+	}
+	else {
+		dlambda[0] = lambda[0] + .01 * lambda[0];
+	}
+	dlambda[1] = lambda[1];
+	gradf[0] = (Ln(X, dlambda, prd) - Ln(X, lambda, prd)) /
+		(dlambda[0]-lambda[0]);
+	//differentiation over the second variable
+	if (lambda[1] == 0) {
+		dlambda[1] = .01;
+	}
+	else {
+		dlambda[1] = lambda[1] + .01 * lambda[1];
+	}
+	dlambda[0] = lambda[0];
+	gradf[1] = (Ln(X, dlambda, prd) - Ln(X, lambda, prd)) /
+		(dlambda[1]-lambda[1]);
+	//normalization
+	gradlen = sqrt(pow(gradf[0], 2) + pow(gradf[1], 2));
+	if (gradlen == 0) {
+		gradf[0] = gradf[1] = 0;
+	}
+	else {
+		gradf[0] /= gradlen;	gradf[1] /= gradlen;
+	}
+	step = gradf[0] * delta_x[0] + gradf[1] * delta_x[1];
+	do {
+		t *= Beta;
+		//tlambda = lambda + t * delta_x
+		tlambda[0] = lambda[0] + t * delta_x[0];
+		tlambda[1] = lambda[1] + t * delta_x[1];
+	} while (Ln(X, tlambda, prd) < Ln(X, lambda, prd)+Alpha*t*step);
+	return t;
+}
+
 void DP(int X[], int prd)
 {
-	double lambda[2], tmp;
-	for (lambda[0] = 0; lambda[0] <= MAX_LAMBDA; lambda[0] += 1) {
-		for (lambda[1] = 0; lambda[1] <= MAX_LAMBDA; lambda[1] += 1) {
-			tmp = Ln(X, lambda, prd);
-			if (tmp > Retrieve(V, prd, X[0], X[1])) {
-				Retrieve(V, prd, X[0], X[1]) = tmp;
-			}
+	//TODO:	find the maximal Ln value by gradient descent algorithm
+	/*Gradient descent:
+	 	given a starting point x in dominant of f
+	 	repeat:
+	 		1. delta_x = grad(f)
+			2. backtracking line search
+	 		3. update x <- x + t * delta_x
+	 	until stopping criterion is satisfied
+	 */
+	double lambda[2], tmplen, delta_x[2], t = 1, dlambda[2];
+	lambda[0] = lambda[1] = 1;
+	while (t > .001) {
+		if (lambda[0] == 0 && lambda[1] == 0) {
+			break;
 		}
+		if (lambda[0] == 0) {
+			dlambda[0] = .01;
+		}
+		else {
+			dlambda[0] = lambda[0] + .01 * lambda[0];
+		}
+		dlambda[1] = lambda[1];
+		delta_x[0] = (Ln(X, dlambda, prd) - Ln(X, lambda, prd)) /
+			(dlambda[0] - lambda[0]);
+		if (lambda[1] == 0) {
+			dlambda[1] = .01;
+		}
+		else {
+			dlambda[1] = lambda[1] + .01 * lambda[1];
+		}
+		delta_x[1] = (Ln(X, dlambda, prd) - Ln(X, lambda, prd)) /
+			(dlambda[1] - lambda[1]);
+		tmplen = sqrt(pow(delta_x[0], 2) + pow(delta_x[1], 2));
+		if (tmplen == 0 || (lambda[0] == 0 && delta_x[1] == 0) ||
+				(lambda[1] == 0 && delta_x[0] == 0)) {
+			break;
+		}
+		delta_x[0] /= tmplen;	delta_x[1] /= tmplen;
+		t = btlinsearch(delta_x, X, lambda, prd);
+		lambda[0] = MAX(0, lambda[0] + t * delta_x[0]);
+		lambda[1] = MAX(0, lambda[1] + t * delta_x[1]);
 	}
+	Retrieve(V, prd, X[0], X[1]) = Ln(X, lambda, prd);
 }
 
 void init()
@@ -151,7 +235,11 @@ int main(int argc, const char *argv[])
 	for (k = 1; k <= period; k++) {
 		for (X[0] = LB; X[0] <= UB; X[0]++) {
 			for (X[1] = LB; X[1] <= UB; X[1]++) {
+				if (X[0] == -54 && X[1] == 11) {
+					printf("hh");
+				}
 				DP(X, k);
+				printf("%d %d %d\n", k, X[0], X[1]);
 			}
 		}
 	}

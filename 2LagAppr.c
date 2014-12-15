@@ -26,10 +26,6 @@
 #define INF			99999999
 #define MAX(x,y)		((x>y)?x:y)
 #define MIN(x,y)		((x<y)?x:y)
-//TODO:	Retrieve() is a macro which gives access to V and Plc
-#define ASSERT(Y)		\
-	(assert(Y[0] >= -MAX_X && Y[0] <= MAX_X &&\
-		Y[1] >= -MAX_X && Y[1] <= MAX_X))
 
 //Value Functions
 double V[N][MAX_PERIOD][MAX_X*2];
@@ -182,7 +178,7 @@ void init()
 	//	function array.
 	//	This part can be changed in order to read data from a file.
 
-	int i;
+	int i, j;
 	FILE * fp = fopen("2Echelon.dat", "r");
 	fscanf(fp, "%lf%d%lf%lf%d%d%lf%d%d%d", &beta,
 			&period, &h[0], &h[1], &K[0], &K[1],
@@ -196,13 +192,18 @@ void init()
 	for (i = 0; i < MAX_X * 2; i++) {
 		V[0][0][i] = V[1][0][i] = 0;
 	}
+	for (i = 0; i <= period; i++) {
+		for (j = 0; j < 2*MAX_X; j++) {
+			V[0][i][j] = V[1][i][j] = (i==0)?0:INF;
+		}
+	}
 }
 
 int main(int argc, const char *argv[])
 {
 	int i, j, X[2], Y[2];
 	init();
-	for (i = 0; i <= period; i++) {
+	for (i = 1; i <= period; i++) {
 		for (j = LB; j <= UB; j++) {
 			DP1(j, i);
 			DP2(j, i);
