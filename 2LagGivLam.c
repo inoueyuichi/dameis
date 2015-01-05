@@ -27,10 +27,7 @@
 #define MIN(x,y)		((x<y)?x:y)
 
 //Value Function
-double V[MAX_PERIOD][MAX_X*2][MAX_X*2];
-
-//Policy
-int Plc[MAX_X*2][MAX_X*2][2];
+double V[MAX_PERIOD][MAX_X*2][2];
 
 //Incremental Holding Cost
 double h[N];
@@ -53,22 +50,16 @@ double beta;
 int LB, UB, period;
 
 //Lambda
-double lambda[2];
+double lambda;
 
-double get_value(int X[], int prd)
+double get_value(int X, int prd, int ech)
 {
-	return V[prd][X[0]+MAX_X][X[1]+MAX_X];
+	return V[prd][X+MAX_X][ech];
 }
 
-void set_value(int X[], int prd, int val)
+void set_value(int X, int prd, int ech, int val)
 {
-	V[prd][X[0]+MAX_X][X[1]+MAX_X] = val;
-}
-
-void set_policy(int X[], int Y[])
-{
-	Plc[X[0]+MAX_X][X[1]+MAX_X][0] = Y[0];
-	Plc[X[0]+MAX_X][X[1]+MAX_X][1] = Y[1];
+	V[prd][X+MAX_X][ech] = val;
 }
 
 double l(int Y)
@@ -86,47 +77,106 @@ double l(int Y)
 	return tmpEV;
 }
 
-double Jn(int X[], int Y[], int prd)
+double J1(int Y1, int prd)
 {
-	int i, tmpX[2];
+	int i;
 	double res, tmpEV = 0;
-	res = l(Y[0]) + h[1] * (Y[1] - Y[0]) + 
-		lambda[0] * (Y[0] - X[0] - K[0]) +
-		lambda[1] * (Y[1]- X[1] - K[1]);
+	res = l(Y1) - h[1] * Y1 + lambda * Y1;
 	for (i = 0; i < D_len; i++) {
-		tmpX[0] = Y[0] - D[i];
-		tmpX[1] = Y[1] - D[i];
-		tmpEV += P[i] * get_value(tmpX, prd - 1);
+		tmpEV += P[i] * get_value(Y1-D[i], prd-1, 0);
 	}
 	return res + beta * tmpEV;
 }
 
-double Ln(int X[], int prd)
+double J2(int Y2, int prd)
 {
-	int Y[2];
-	double tmpJ, tmpmin = INF;
-	for (Y[0] = X[0]; Y[0] <= X[1]; Y[0] ++) {
-		for (Y[1] = X[1]; Y[1] <= UB; Y[1] ++) {
-			tmpJ = Jn(X, Y, prd);
+	int i;
+	double tmpEV = 0;
+	for (i = 0; i < D_len; i++) {
+		tmpEV += P[i] * get_value(Y2-D[i], prd-1, 1);
+	}
+	return h[1] * Y2 + beta * tmpEV;
+}
+
+void DP1(int prd)
+{
+	int X1, Y1;
+	double tmpmin = INF, tmpJ;
+	for (X1 = LB; X1 <= UB; X1 ++) {
+		for (Y1 = X1; 1; Y1 ++) {
+			tmpJ = J1(Y1, prd);
 			if (tmpJ < tmpmin) {
 				tmpmin = tmpJ;
-				if (prd == period) {
-					set_policy(X, Y);
-				}
+			}
+			else {
+				break;
 			}
 		}
+		set_value(X1, prd, 0, tmpmin - lambda * (X1 + K[0]));
 	}
-	return tmpmin;
+}
+
+void DP2(int prd)
+{
+	int X2, Y1;
+	double tmpmin1, tmpmin2, tmpJ;
+	tmpmin1 = tmpmin2 = INF;
+	for (X2 = LB; X2 <= UB; X2 ++) {
+		for (Y1 = X2; 1; Y1 ++) {
+			tmpJ = J1(Y1, prd);
+			if (tmpJ < tmpmin1) {
+				tmpmin1 = tmpJ;
+			}
+			else {
+				break;
+			}
+		}
+		for (Y1 = X2; Y1 <= X2 + K[1]; Y1++) {
+			tmpJ = J2(Y1, prd);
+			if (tmpJ < tmpmin2) {
+				tmpmin2 = tmpJ;
+			}
+			else {
+				break;
+			}
+		}
+		set_value(X2, prd, 1, J1(X2, prd)-tmpmin1+tmpmin2);
+	}
 }
 
 void DP()
 {
-	int prd, X[2];
+	int prd;
 	for (prd = 1; prd <= period; prd++) {
-		for (X[0] = LB; X[0] <= UB; X[0] ++) {
-			for (X[1] = LB; X[1] <= UB; X[1] ++) {
-				set_value(X, prd, 
-					Ln(X, prd));
+		DP1(prd);
+		DP2(prd);
+	}
+}
+
+double J(int Y[], int prd)
+{
+	int i;
+	double tmpEV = 0;
+	for (i = 0; i < D_len; i++) {
+		tmpEV += P[i] * (get_value(Y[0]-D[i], prd-1, 0)+
+				get_value(Y[1]-D[i], prd-1, 1));
+	}
+	return l(Y[0]) + h[1]*(Y[1]-Y[0]) + beta * tmpEV;
+}
+
+void get_policy(int X[], int prd, int plc[])
+{
+	int Y[2], YUB[2];
+	double tmpJ, tmpmin = INF;
+	YUB[0] = MIN(X[0], X[0] + K[0]);
+	YUB[1] = X[1] + K[1];
+	for (Y[0] = X[0]; Y[0] <= YUB[0]; Y[0] ++) {
+		for (Y[1] = X[1]; Y[1] <= YUB[1]; Y[1] ++) {
+			tmpJ = J(Y, prd);
+			if (tmpJ < tmpmin) {
+				tmpmin = tmpJ;
+				plc[0] = Y[0];
+				plc[1] = Y[1];
 			}
 		}
 	}
@@ -151,8 +201,8 @@ void init()
 	}
 	for (i = 0; i < MAX_PERIOD; i++) {
 		for (j = 0; j < MAX_X *2; j++) {
-			for (k = 0; k < MAX_X * 2; k++) {
-				V[i][j][k] = ((i==0)?0:INF);
+			for (k = 0; k < 2; k++) {
+				V[i][j][k] = 0;
 			}
 		}
 	}
@@ -160,18 +210,16 @@ void init()
 
 int main(int argc, const char *argv[])
 {
-	int X[2];
+	int X[2], Plc[2];
+	scanf("%lf", &lambda);
 	init();
-	scanf("%lf%lf", &lambda[0], &lambda[1]);
 	DP();
 	while (scanf("%d%d", &X[0], &X[1]) != EOF) {
 		X[1] += X[0];
+		get_policy(X, period, Plc);
 		printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%.2lf\n", X[0], X[1]-X[0], X[0], X[1], 
-				Plc[X[0]+MAX_X][X[1]+MAX_X][0],
-				Plc[X[0]+MAX_X][X[1]+MAX_X][1], 
-				Plc[X[0]+MAX_X][X[1]+MAX_X][0]-X[0],
-				Plc[X[0]+MAX_X][X[1]+MAX_X][1]-X[1],
-				get_value(X, period));
+				Plc[0], Plc[1], Plc[0]-X[0], Plc[1]-X[1],
+				get_value(X[0], period, 0)+get_value(X[1],period,1));
 	}
 	return 0;
 }
