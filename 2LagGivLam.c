@@ -101,8 +101,9 @@ double J2(int Y2, int prd)
 void DP1(int prd)
 {
 	int X1, Y1;
-	double tmpmin = INF, tmpJ;
+	double tmpmin, tmpJ;
 	for (X1 = LB; X1 <= UB; X1 ++) {
+		tmpmin = INF;
 		for (Y1 = X1; 1; Y1 ++) {
 			tmpJ = J1(Y1, prd);
 			if (tmpJ < tmpmin) {
@@ -120,8 +121,8 @@ void DP2(int prd)
 {
 	int X2, Y1;
 	double tmpmin1, tmpmin2, tmpJ;
-	tmpmin1 = tmpmin2 = INF;
 	for (X2 = LB; X2 <= UB; X2 ++) {
+		tmpmin1 = tmpmin2 = INF;
 		for (Y1 = X2; 1; Y1 ++) {
 			tmpJ = J1(Y1, prd);
 			if (tmpJ < tmpmin1) {
@@ -168,7 +169,7 @@ void get_policy(int X[], int prd, int plc[])
 {
 	int Y[2], YUB[2];
 	double tmpJ, tmpmin = INF;
-	YUB[0] = MIN(X[0], X[0] + K[0]);
+	YUB[0] = MIN(X[1], X[0] + K[0]);
 	YUB[1] = X[1] + K[1];
 	for (Y[0] = X[0]; Y[0] <= YUB[0]; Y[0] ++) {
 		for (Y[1] = X[1]; Y[1] <= YUB[1]; Y[1] ++) {
