@@ -285,13 +285,18 @@ void perm_X(int prd, int idx, int res[])
 	//TODO:	This function permutates among all possible state
 	//	variables.
 
-	if (idx != N - 1) {
+	if (idx == 0) {
 		for (res[idx] = LB; res[idx] <= UB; res[idx]++) {
+			perm_X(prd, 1, res);
+		}
+	}
+	else if (idx != N - 1) {
+		for (res[idx] = res[idx-1]; res[idx] <= UB; res[idx]++) {
 			perm_X(prd, idx+1, res);
 		}
 	}
 	else {
-		for (res[idx] = LB; res[idx] <= UB; res[idx]++) {
+		for (res[idx] = res[idx-1]; res[idx] <= UB; res[idx]++) {
 			DP(prd, res);
 		}
 	}
