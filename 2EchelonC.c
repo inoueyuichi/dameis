@@ -113,10 +113,10 @@ void DP(int X0, int X1, int prd)
 
 	int  Y1L, Y1U, Y[2];
 	double tmpJ;
-	Y1U = X1 + K[1];
 	for (Y[0] = X0; Y[0] <= X1; Y[0] ++) {
 		Y1L = MAX(X1, Y[0]+K[0]-K[1]);
 		Y1U = MIN(X[1]+K[1], Y0+K[0]);
+		Y1U = MIN(Y1U, UB);
 		for (Y[1] = Y1L; Y[1] <= Y1U; Y[1] ++) {
 			tmpJ = J(Y, prd);
 			if (Retrieve(V, prd, X0, X1) > tmpJ) {

@@ -28,6 +28,7 @@
 
 //Value Function
 double V[MAX_PERIOD][MAX_X*2][2];
+double Sim_V[MAX_PERIOD][MAX_X*2][MAX_X*2];
 
 //Incremental Holding Cost
 double h[N];
@@ -60,6 +61,16 @@ double get_value(int X, int prd, int ech)
 void set_value(int X, int prd, int ech, int val)
 {
 	V[prd][X+MAX_X][ech] = val;
+}
+
+double get_sim_value(int X[], int prd)
+{
+	return Sim_V[prd][MAX_X+X[0]][MAX_X+X[1]];
+}
+
+void set_sim_value(int X[], int prd, int val)
+{
+	Sim_V[prd][MAX_X+X[0]][MAX_X+X[1]] = val;
 }
 
 double l(int Y)
@@ -209,18 +220,40 @@ void init()
 	}
 }
 
+void simu()
+{
+	int prd, X[2], Y[2], i, tX[2];
+	double tmpEV;
+	for (prd = 1; prd <= period; prd ++) {
+		for (X[0] = LB; X[0] <= UB; X[0] ++) {
+			for (X[1] = LB; X[1] <= UB; X[1] ++) {
+				get_policy(X, prd, Y);
+				tmpEV = 0;
+				for (i = 0; i < D_len; i++) {
+					tX[0] = X[0] - D[i];
+					tX[1] = X[1] - D[i];
+					tmpEV += P[i] * get_sim_value(tX, prd-1);
+				}
+				set_sim_value(X, prd, 
+					l(Y[0])+h[1]*(Y[1]-Y[0])+beta * tmpEV);
+			}
+		}
+	}
+}
+
 int main(int argc, const char *argv[])
 {
 	int X[2], Plc[2];
 	scanf("%lf", &lambda);
 	init();
 	DP();
+	simu();
 	while (scanf("%d%d", &X[0], &X[1]) != EOF) {
 		X[1] += X[0];
 		get_policy(X, period, Plc);
 		printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%.2lf\n", X[0], X[1]-X[0], X[0], X[1], 
 				Plc[0], Plc[1], Plc[0]-X[0], Plc[1]-X[1],
-				get_value(X[0], period, 0)+get_value(X[1],period,1));
+				get_sim_value(X, period));
 	}
 	return 0;
 }
