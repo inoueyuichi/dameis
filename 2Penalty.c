@@ -29,9 +29,11 @@
 
 //Value Function
 double V[MAX_PERIOD][MAX_X*2][2];
+double EvV[MAX_PERIOD][MAX_X*2][MAX_X*2];
 
 //Policy
-int Plc[MAX_X*2][2];
+int Base[MAX_PERIOD][MAX_X*2][2];
+int Plc[MAX_X*2][MAX_X*2][2];
 
 //Ending Echelon Inventory
 int Ending[2];
@@ -56,8 +58,15 @@ double beta;
 //Lower & Upper Bound of X, Number of Periods
 int LB, UB, period;
 
-//Initial Installation & Echelon Inventory
-int x[2], X[2];
+void set_EvV(int prd, int X[], double val)
+{
+	EvV[prd][MAX_X+X[0]][MAX_X+X[1]] = val;
+}
+
+double get_EvV(int prd, int X[])
+{
+	return EvV[prd][MAX_X+X[0]][MAX_X+X[1]];
+}
 
 void set_value(int prd, int X, int cnt, double val)
 {
@@ -69,14 +78,25 @@ double get_value(int prd, int X, int cnt)
 	return V[prd][X+MAX_X][cnt];
 }
 
-void set_policy(int X, int cnt, int val)
+void set_base(int prd, int X, int cnt, int val)
 {
-	Plc[X+MAX_X][cnt] = val;
+	Base[prd][X+MAX_X][cnt] = val;
 }
 
-int get_policy(int X, int cnt)
+int get_base(int prd, int X, int cnt)
 {
-	return Plc[X+MAX_X][cnt];
+	return Base[prd][X+MAX_X][cnt];
+}
+
+void set_policy(int X[], int Y[])
+{
+	Plc[MAX_X+X[0]][MAX_X+X[1]][0] = Y[0];
+	Plc[MAX_X+X[0]][MAX_X+X[1]][1] = Y[1];
+}
+
+int get_policy(int X[], int cnt)
+{
+	return Plc[MAX_X+X[0]][MAX_X+X[1]][cnt];
 }
 
 double l(int Y1)
@@ -187,9 +207,7 @@ void DP()
 				}
 			}
 			set_value(prd, X, 0, tmpmin+tmpV);
-			if (prd == period) {
-				set_policy(X, 0, Ystar);
-			}
+			set_base(prd, X, 0, Ystar);
 
 			tmpV = PCC2(X, prd) + PES2(X, prd);
 			tmpmin = INF;
@@ -201,9 +219,7 @@ void DP()
 				}
 			}
 			set_value(prd, X, 1, tmpmin+tmpV);
-			if (prd == period) {
-				set_policy(X, 1, Ystar);
-			}
+			set_base(prd, X, 1, Ystar);
 		}
 	}
 }
@@ -230,22 +246,46 @@ void init()
 	}
 }
 
+void Eval_Base()
+{
+	int X[2], prd, B[2], Y[2];
+	for (prd = 1; prd <= period; prd++) {
+		for (X[0] = LB; X[0] <= UB; X[0]++) {
+			for (X[1] = LB; X[1] < UB; X[1]++) {
+				B[0] = get_base(prd, X[0], 0);
+				B[1] = get_base(prd, X[1], 1);
+				Y[0] = MIN(B[0], X[0]+K[0]);
+				Y[0] = MIN(Y[0], X[1]);
+				Y[0] = MAX(X[0], Y[0]);
+				Y[1] = MIN(B[1], X[1]+K[1]);
+				Y[1] = MAX(X[1], Y[1]);
+				set_EvV(prd, X, L1(Y[0], prd)+L2(Y[1], prd));
+				if (prd == period) {
+					set_policy(X, Y);
+				}
+			}
+		}
+	}
+}
+
 int main(int argc, const char *argv[])
 {
-	int i, j, k;
+	int i, j, k, x[2], X[2];
+
 	init();
 
 	DP();
 
-	//TODO: read installation inventory and print the optimal policy
+	Eval_Base();
+
+	//TODO: read installation inventory and print the optimal base
 	while (scanf("%d%d", &x[0], &x[1]) != EOF) {
 		X[0] = x[0]; 	X[1] = x[0] + x[1];
-		Ending[0] = get_policy(X[0], 0);
-		Ending[1] = get_policy(X[1], 1);
+		Ending[0] = get_policy(X, 0);
+		Ending[1] = get_policy(X, 1);
 		printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%lf\n", x[0], x[1],
 			X[0], X[1], Ending[0] - X[0], Ending[1] - X[1],
-			Ending[0], Ending[1], 
-			get_value(period, X[0], 0)+get_value(period,X[1], 1));
+			Ending[0], Ending[1], get_EvV(period, X));
 	}
 	return 0;
 }
