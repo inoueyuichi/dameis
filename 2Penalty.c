@@ -134,6 +134,19 @@ double L2(int Y2, int prd)
 	return h[1]*Y2 + beta*EV;
 }
 
+double Ev_L(int Y[], int prd)
+{
+	int i, X[2];
+	double res = l(Y[0])+h[1]*(Y[1]-Y[0]),
+	       EV = 0;
+	for (i = 0; i < D_len; i++) {
+		X[0] = Y[0] - D[i];
+		X[1] = Y[1] - D[i];
+		EV += P[i] * get_EvV(prd-1, X);
+	}
+	return res + beta * EV;
+}
+
 double PCC1(int X1, int prd)
 {
 	int Ystar, Y1;
@@ -251,7 +264,7 @@ void Eval_Base()
 	int X[2], prd, B[2], Y[2];
 	for (prd = 1; prd <= period; prd++) {
 		for (X[0] = LB; X[0] <= UB; X[0]++) {
-			for (X[1] = LB; X[1] < UB; X[1]++) {
+			for (X[1] = X[0]; X[1] <= UB; X[1]++) {
 				B[0] = get_base(prd, X[0], 0);
 				B[1] = get_base(prd, X[1], 1);
 				Y[0] = MIN(B[0], X[0]+K[0]);
@@ -259,7 +272,7 @@ void Eval_Base()
 				Y[0] = MAX(X[0], Y[0]);
 				Y[1] = MIN(B[1], X[1]+K[1]);
 				Y[1] = MAX(X[1], Y[1]);
-				set_EvV(prd, X, L1(Y[0], prd)+L2(Y[1], prd));
+				set_EvV(prd, X, Ev_L(Y, prd)); 
 				if (prd == period) {
 					set_policy(X, Y);
 				}
