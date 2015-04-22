@@ -47,7 +47,9 @@ int K[N];
 double beta;
 
 //Base stock
-int S[2];
+int S2;
+int S1[2];
+int XS[2];
 
 //Lower & Upper Bound of X, Number of Periods
 int LB, UB, period;
