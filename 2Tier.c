@@ -59,6 +59,20 @@ double get_value(int X[], int prd)
 	return V[prd][X[0]+MAX_X][X[1]+MAX_X];
 }
 
+int get_S1(int X2)
+{
+	if (X2 <= XS[0]) {
+		return S1[0];
+	}
+	else if (X2 >XS[1]) {
+		return S1[1];
+	}
+	else {
+		return S1[0]+((double)(S1[1]-S1[0]))
+			/((double)(XS[1]-XS[0]))*(X2-XS[0]);
+	}
+}
+
 void set_value(int X[], int prd, double val)
 {
 	V[prd][X[0]+MAX_X][X[1]+MAX_X] = val;
@@ -82,9 +96,10 @@ double l(int Y1)
 
 void policy(int X[], int Y[])
 {
-	Y[0] = MIN(MIN(S[0], X[0]+K[0]), X[1]);
+	int S1 = get_S1(X[1]);
+	Y[0] = MIN(MIN(S1, X[0]+K[0]), X[1]);
 	Y[0] = MAX(X[0], Y[0]);
-	Y[1] = MIN(S[1], X[1]+K[1]);
+	Y[1] = MIN(S2, X[1]+K[1]);
 	Y[1] = MAX(X[1], Y[1]);
 }
 
@@ -145,7 +160,7 @@ int main(int argc, const char *argv[])
 {
 	int X[2];
 	init();
-	scanf("%d%d", &S[0], &S[1]);
+	scanf("%d%d%d%d%d", &S1[0], &XS[0], &S1[1], &XS[1], &S2);
 	DP();
 	while (scanf("%d%d", &X[0], &X[1]) != EOF) {
 		X[1] += X[0];
