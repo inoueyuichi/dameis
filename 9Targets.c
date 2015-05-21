@@ -68,7 +68,7 @@ void set_value(int X1, int X2, int t, double val)
 	V[t][X1+MAX_X][X2+MAX_X] = val;
 }
 
-int get_policy(int X1, int X2, int Y[])
+void get_policy(int X1, int X2, int Y[])
 {
 	Y[0] = Plc[X1+MAX_X][X2+MAX_X][0];
 	Y[1] = Plc[X1+MAX_X][X2+MAX_X][1];
@@ -106,7 +106,7 @@ double J(int X[], int Y[], int t)
 	int i;
 	double exp = 0;
 	for (i = 0; i < D_len; i++) {
-		exp+=P[i] * get_value(X[0]-D[i], X[1]-D[i], t-1);
+		exp+=P[i] * get_value(Y[0]-D[i], Y[1]-D[i], t-1);
 	}
 	return L(X, Y) + beta * exp;
 }
@@ -115,20 +115,20 @@ void DP()
 {
 	int t, X[2], Y[2], tmpJ;
 	for (t = 1; t <= period; t++) {
-		for (X[0] = LB; X[0] < UB; X[0]++) {
-			for (X[1] = X[0]; X[1] < UB; X[1]++) {
+		for (X[0] = LB; X[0] <= UB; X[0]++) {
+			for (X[1] = X[0]; X[1] <= UB; X[1]++) {
 				tmpJ = INF;
-				for (Y[0] = X[0]; Y[0] < MIN(X[1], X[0]+K[0]); Y[0]++) {
-					for (Y[1] = X[1]; Y[1] < X[1]+K[1]; Y[1]++) {
+				for (Y[0] = X[0]; Y[0] <= MIN(X[1], X[0]+K[0]); Y[0]++) {
+					for (Y[1] = X[1]; Y[1] <= X[1]+K[1]; Y[1]++) {
 						if (J(X,Y,t) < tmpJ) {
 							tmpJ = J(X,Y,t);
+							if (t == period) {
+								set_policy(X[0], X[1], Y);
+							}
 						}
 					}
 				}
 				set_value(X[0], X[1], t, tmpJ);
-				if (t == period) {
-					set_policy(X[0], X[1], Y);
-				}
 			}
 		}
 	}
@@ -238,7 +238,7 @@ int Y24(int X[], int t)
 void find_intersect(int X[], int t[])
 {
 	int i, Y[2];
-	for (i = 0; i < period; i++) {
+	for (i = period; i > 0; i--) {
 		Y[0] = X[1]+K[1]-(i-1)*K[0];
 		if (X[0] <= Y[0] && Y[0] <= X[0]+K[0]) {
 			break;
