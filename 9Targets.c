@@ -80,55 +80,50 @@ void set_policy(int X1, int X2, int Y[])
 	Plc[X1+MAX_X][X2+MAX_X][1] = Y[1];
 }
 
-double phi(int Y1)
+double L(int Y[])
 {
 	int i;
-	double tmp = 0, res = 0;
+	double res = 0, pen_hol = p, EDYp = 0;
 	for (i = 0; i < D_len; i++) {
-		if (Y1 - D[i] >= 0) {
-			tmp = (h[0]+h[1]) * (Y1-D[i]);
-		}
-		else {
-			tmp = p * (D[i] - Y1);
-		}
-		res += P[i] * tmp;
+		EDYp += MAX(D[i]-Y[0], 0) * P[i];
 	}
+	for (i = 0; i < N; i++) {
+		res += h[i] * (Y[i] - ED);
+		pen_hol += h[i];
+	}
+	res += pen_hol * EDYp;
 	return res;
 }
 
-double L(int X[], int Y[])
-{
-	return phi(Y[0]) + h[1] * (Y[1]-Y[0]);
-}
-
-double J(int X[], int Y[], int t)
+double J(int Y[], int t)
 {
 	int i;
-	double exp = 0;
+	double res, EV = 0;
+	res = L(Y);
 	for (i = 0; i < D_len; i++) {
-		exp+=P[i] * get_value(Y[0]-D[i], Y[1]-D[i], t-1);
+		EV += P[i] * get_value(Y[0]-D[i], Y[1]-D[i], t-1);
 	}
-	return L(X, Y) + beta * exp;
+	res += beta * EV;
+	return res;
 }
 
 void DP()
 {
-	int t, X[2], Y[2], tmpJ;
+	int t, X[2], Y[2]; 
+	double tmpJ;
 	for (t = 1; t <= period; t++) {
 		for (X[0] = LB; X[0] <= UB; X[0]++) {
 			for (X[1] = X[0]; X[1] <= UB; X[1]++) {
 				tmpJ = INF;
 				for (Y[0] = X[0]; Y[0] <= MIN(X[1], X[0]+K[0]); Y[0]++) {
 					for (Y[1] = X[1]; Y[1] <= X[1]+K[1]; Y[1]++) {
-						if (J(X,Y,t) < tmpJ) {
-							tmpJ = J(X,Y,t);
-							if (t == period) {
-								set_policy(X[0], X[1], Y);
-							}
+						if (J(Y,t) <= tmpJ) {
+							tmpJ = J(Y,t);
+							set_value(X[0], X[1], t, tmpJ);
+							set_policy(X[0], X[1], Y);
 						}
 					}
 				}
-				set_value(X[0], X[1], t, tmpJ);
 			}
 		}
 	}
@@ -140,8 +135,8 @@ int Y11(int X[], int t)
 	double tmp = INF;
 	Y[1] = X[1];
 	for (Y[0] = LB; Y[0] < UB; Y[0]++) {
-		if (J(Y,X,t) < tmp) {
-			tmp = J(Y, X, t);
+		if (J(Y,t) < tmp) {
+			tmp = J(Y, t);
 			res = Y[0];
 		}
 	}
@@ -154,8 +149,8 @@ int Y12(int X[], int t)
 	double tmp = INF;
 	for (Y[0] = LB; Y[0] < UB; Y[0]++) {
 		Y[1] = Y[0] + (t-1)*K[0] -K[1];
-		if (J(Y,X,t) < tmp) {
-			tmp = J(Y,X,t);
+		if (J(Y,t) < tmp) {
+			tmp = J(Y,t);
 			res = Y[0];
 		}
 	}
@@ -168,8 +163,8 @@ int Y13(int X[], int t)
 	double tmp = INF;
 	for (Y[0] = LB; Y[0] < UB; Y[0]++) {
 		Y[1] = Y[0] + (t-2) * K[0];
-		if (J(Y,X,t) < tmp) {
-			tmp = J(Y,X,t);
+		if (J(Y,t) < tmp) {
+			tmp = J(Y,t);
 			res = Y[0];
 		}
 	}
@@ -182,8 +177,8 @@ int Y14(int X[], int t)
 	double tmp = INF;
 	for (Y[0] = LB; Y[0] < UB; Y[0]++) {
 		for (Y[1] = LB; Y[1] < UB; Y[1]++) {
-			if (J(Y,X,t) < tmp) {
-				tmp = J(Y, X, t);
+			if (J(Y,t) < tmp) {
+				tmp = J(Y, t);
 				res = Y[0];
 			}
 		}
@@ -197,8 +192,8 @@ int Y15(int X[], int t)
 	double tmp = INF;
 	for (Y[0] = LB; Y[0] < UB; Y[0]++) {
 		Y[1] = Y[0] + (t-2)*K[0]-K[1];
-		if (J(Y,X,t) < tmp) {
-			tmp = J(Y,X,t);
+		if (J(Y,t) < tmp) {
+			tmp = J(Y,t);
 			res = Y[0];
 		}
 	}
@@ -221,8 +216,8 @@ int Y23(int X[], int t)
 	double tmp = INF;
 	for (Y[0] = LB; Y[0] < UB; Y[0]++) {
 		for (Y[1] = LB; Y[1] < UB; Y[1]++) {
-			if (J(Y,X,t) < tmp) {
-				tmp = J(Y, X, t);
+			if (J(Y,t) < tmp) {
+				tmp = J(Y, t);
 				res = Y[1];
 			}
 		}
@@ -306,7 +301,6 @@ int main(int argc, const char *argv[])
 		X[1] += X[0];
 		get_policy(X[0], X[1], Y);
 		printf("%d\t%d\t%d\t%d\t", X[0], X[1], Y[0], Y[1]);
-		//printf("%.2lf\t", get_value(X[0], X[1], period));
 		printf("%d\t", Y11(X, period));
 		find_intersect(X, t);
 		if (t[0] != INF) {
