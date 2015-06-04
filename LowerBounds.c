@@ -22,21 +22,14 @@
 #define MAX_PERIOD		100
 #define MAX_X			200
 #define MAX_D_LENGTH		30
-#define N			2
+#define N			3
 #define INF			99999999
 #define MAX(x,y)		((x>y)?x:y)
 #define MIN(x,y)		((x<y)?x:y)
 
 //Value Function
-double V[MAX_PERIOD][MAX_X*2][2];
-double EvV[MAX_PERIOD][MAX_X*2][MAX_X*2];
-
-//Policy
-int Base[MAX_PERIOD][MAX_X*2][2];
-int Plc[MAX_X*2][MAX_X*2][2];
-
-//Ending Echelon Inventory
-int Ending[2];
+double U1[3][MAX_PERIOD][MAX_X*2];
+double U2[3][MAX_PERIOD][MAX_X*2];
 
 //Incremental Holding Cost
 double h[N];
@@ -58,247 +51,327 @@ double beta;
 //Lower & Upper Bound of X, Number of Periods
 int LB, UB, period;
 
-void set_EvV(int prd, int X[], double val)
+double get_U11(int X1, int prd)
 {
-	EvV[prd][MAX_X+X[0]][MAX_X+X[1]] = val;
+	return U1[0][prd][X1+MAX_X];
 }
 
-double get_EvV(int prd, int X[])
+double get_U21(int X1, int prd)
 {
-	return EvV[prd][MAX_X+X[0]][MAX_X+X[1]];
+	return U2[0][prd][X1+MAX_X];
 }
 
-void set_value(int prd, int X, int cnt, double val)
+void set_U11(int X1, int prd, double val)
 {
-	V[prd][X+MAX_X][cnt] = val;
+	U1[0][prd][X1+MAX_X] = val;
 }
 
-double get_value(int prd, int X, int cnt)
+void set_U21(int X1, int prd, double val)
 {
-	return V[prd][X+MAX_X][cnt];
+	U2[0][prd][X1+MAX_X] = val;
 }
 
-void set_base(int prd, int X, int cnt, int val)
+double get_U12(int X2, int prd)
 {
-	Base[prd][X+MAX_X][cnt] = val;
+	return U1[1][prd][X2+MAX_X];
 }
 
-int get_base(int prd, int X, int cnt)
+double get_U22(int X2, int prd)
 {
-	return Base[prd][X+MAX_X][cnt];
+	return U2[1][prd][X2+MAX_X];
 }
 
-void set_policy(int X[], int Y[])
+void set_U12(int X2, int prd, double val)
 {
-	Plc[MAX_X+X[0]][MAX_X+X[1]][0] = Y[0];
-	Plc[MAX_X+X[0]][MAX_X+X[1]][1] = Y[1];
+	U1[1][prd][X2+MAX_X] = val;
 }
 
-int get_policy(int X[], int cnt)
+void set_U22(int X2, int prd,int val)
 {
-	return Plc[MAX_X+X[0]][MAX_X+X[1]][cnt];
+	U2[1][prd][X2+MAX_X] = val;
 }
 
-double l(int Y1)
+double get_U13(int X3, int prd)
+{
+	return U1[2][prd][X3+MAX_X];
+}
+
+double get_U23(int X3, int prd)
+{
+	return U2[2][prd][X3+MAX_X];
+}
+
+void set_U13(int X3, int prd, double val)
+{
+	U1[2][prd][X3+MAX_X] = val;
+}
+
+void set_U23(int X3, int prd, double val)
+{
+	U2[2][prd][X3+MAX_X] = val;
+}
+
+double L1(int Y1)
 {
 	int i;
 	double res = 0;
 	for (i = 0; i < D_len; i++) {
-		if (Y1 > D[i]) {
-			res += P[i] * (h[0]+h[1]) * (Y1-D[i]);
-		}
-		else {
-			res += P[i] * p * (D[i]-Y1);
-		}
+		res += (h[0]+h[1]+h[2])*MAX(Y1-D[i],0);
+		res += p * MAX(D[i]-Y1, 0);
 	}
+	return res -(h[1]+h[2])*Y1;
+}
+
+double L2(int Y2)
+{
+	return h[1]*Y2;
+}
+
+double L3(int Y3)
+{
+	return h[2]*Y3;
+}
+
+double J11(int Y1, int prd)
+{
+	int i;
+	double res = 0;
+	for (i = 0; i < D_len; i++) {
+		res+=get_U11(Y1 - D[i], prd);
+	}
+	return L1(Y1)+res*beta;
+}
+
+double J21(int Y1, int prd)
+{
+	int i;
+	double res = 0;
+	for (i = 0; i < D_len; i++) {
+		res += get_U21(Y1-D[i], prd);
+	}
+	return L1(Y1)+res*beta;
+}
+
+double J12(int Y2, int prd)
+{
+	int i;
+	double res = 0;
+	for (i = 0; i < D_len; i++) {
+		res+=get_U12(Y2-D[i], prd);
+	}
+	return L2(Y2) + res*beta;
+}
+
+double J22(int Y2, int prd)
+{
+	int i;
+	double res = 0;
+	for (i = 0; i < D_len; i++) {
+		res += get_U22(Y2-D[i], prd);
+	}
+	return L2(Y2)+res*beta;
+}
+
+double J13(int Y3, int prd)
+{
+	int i;
+	double res = 0;
+	for (i = 0; i < D_len; i++) {
+		res+=get_U13(Y3-D[i], prd);
+	}
+	return L3(Y3)+res*beta;
+}
+
+double J23(int Y3, int prd)
+{
+	int i;
+	double res = 0;
+	for (i = 0; i < D_len; i++) {
+		res += get_U23(Y3-D[i], prd);
+	}
+	return L3(Y3)+beta*res;
+}
+
+void update_U11(int prd)
+{
+	int X1, Y1;
+	double tmpmin, tmp;
+	for (X1 = LB; X1 <= UB; X1++) {
+		tmpmin = INF;
+		for (Y1 = X1; Y1 <= UB; Y1++) {
+			tmp = J11(Y1, prd-1);
+			if (tmp < tmpmin) {
+				tmpmin = tmp;
+			}
+		}
+		set_U11(X1, prd, tmpmin);
+	}
+}
+
+void update_U12(int prd)
+{
+	int X2, Y2, i;
+	double tmpmin, tmp;
+	for (X2 = LB; X2 <= UB; X2++) {
+		tmpmin = INF;
+		for (Y2 = X2; Y2 < UB; Y2++) {
+			tmp = J12(Y2, prd-1)-J11(Y2, prd-1);
+			if (tmp < tmpmin) {
+				tmpmin = tmp;
+				tmp += L1(X2);
+				for (i = 0; i < D_len; i++) {
+					tmp += beta*get_U11(X2-D[i], prd-1);
+				}
+			}
+		}
+		set_U12(X2, prd, tmpmin);
+	}
+}
+
+void update_U13(int prd)
+{
+	int X3, Y3, i, Y2;
+	double tmpmin, tmp, res;
+	for (X3 = LB; X3 <= UB; X3++) {
+		tmpmin = INF;
+		for (Y3 = X3; Y3 <= MIN(UB, X3+K[2]); Y3++) {
+			tmp = J13(Y3, prd-1);
+			if (tmp < tmpmin) {
+				tmpmin = tmp;
+			}
+		}
+		res = tmpmin;
+		tmpmin = INF;
+		for (Y2 = X3; Y2 <= UB; Y2++) {
+			tmp = J12(Y2, prd-1);
+			if (tmp < tmpmin) {
+				tmpmin = tmp;
+			}
+		}
+		res -= tmpmin;
+		res += L2(X3);
+		for (i = 0; i < D_len; i++) {
+			res += beta * get_U12(X3-D[i], prd-1);
+		}
+		set_U13(X3, prd, res);
+	}
+}
+
+void DP_U1()
+{
+	int prd = 0;
+	for (prd = 1; prd <= period; prd++) {
+		update_U11(prd);
+		update_U12(prd);
+		update_U13(prd);
+	}
+}
+
+double get_U1(int X[])
+{
+	int res;
+	res = get_U11(X[0], period);
+	res += get_U12(X[1], period);
+	res += get_U13(X[2], period);
 	return res;
 }
 
-double L1(int Y1, int prd)
+void update_U21(int prd)
 {
-	int i;
-	double EV = 0;
-	for (i = 0; i < D_len; i++) {
-		EV += P[i] * get_value(prd-1, Y1-D[i], 0);
-	}
-	return l(Y1) - h[1]*Y1 + beta*EV;
-}
-
-double L2(int Y2, int prd)
-{
-	int i;
-	double EV = 0;
-	for (i = 0; i < D_len; i++) {
-		EV += P[i] * get_value(prd-1, Y2-D[i], 1);
-	}
-	return h[1]*Y2 + beta*EV;
-}
-
-double Ev_L(int Y[], int prd)
-{
-	int i, X[2];
-	double res = l(Y[0])+h[1]*(Y[1]-Y[0]),
-	       EV = 0;
-	for (i = 0; i < D_len; i++) {
-		X[0] = Y[0] - D[i];
-		X[1] = Y[1] - D[i];
-		EV += P[i] * get_EvV(prd-1, X);
-	}
-	return res + beta * EV;
-}
-
-double PCC1(int X1, int prd)
-{
-	int Ystar, Y1;
-	double tmp, tmpmin = INF;
-	for (Y1 = LB; Y1 <= UB; Y1++) {
-		tmp = L1(Y1, prd);
-		if (tmp < tmpmin) {
-			tmpmin = tmp;
-			Ystar = Y1;
+	int X1, Y1;
+	double tmpmin, tmp;
+	for (X1 = LB; X1 <= UB; X1++) {
+		tmpmin = INF;
+		for (Y1 = X1; Y1 <= MIN(UB, X1+K[0]); Y1++) {
+			tmp = J21(Y1, prd-1);
+			if (tmp < tmpmin) {
+				tmpmin = tmp;
+			}
 		}
-	}
-	if (Ystar <= X1 + K[0]) {
-		return 0;
-	}
-	else {
-		return L1(X1+K[0], prd) - tmpmin;
+		set_U21(X1, prd, tmpmin);
 	}
 }
 
-double PCC2(int X2, int prd)
+void update_U22(int prd)
 {
-	int Ystar, Y2;
-	double tmp, tmpmin = INF;
-	for (Y2 = LB; Y2 <= UB; Y2++) {
-		tmp = L2(Y2, prd);
-		if (tmp < tmpmin) {
-			tmpmin = tmp;
-			Ystar = Y2;
+	int X2, Y2;
+	double tmpmin, tmp;
+	for (X2 = LB; X2 <= UB; X2++) {
+		tmpmin = INF;
+		for (Y2 = X2; Y2 < MIN(UB, X2+K[1]); Y2++) {
+			tmp = J22(Y2, prd-1);
+			if (tmp < tmpmin) {
+				tmpmin = tmp;
+			}
 		}
-	}
-	if (Ystar <= X2 + K[1]) {
-		return 0;
-	}
-	else {
-		return L2(X2+K[1], prd) - tmpmin;
+		set_U22(X2, prd, tmpmin);
 	}
 }
 
-double PES2(int X2, int prd)
+void update_U23(int prd)
 {
-	int Ystar, Y1;
-	double tmp, tmpmin = INF;
-	for (Y1 = LB; Y1 <= UB; Y1++) {
-		tmp = L1(Y1, prd);
-		if (tmp < tmpmin) {
-			tmpmin = tmp;
-			Ystar = Y1;
+	int X3, Y3;
+	double tmpmin, tmp;
+	for (X3 = LB; X3 <= UB; X3++) {
+		tmpmin = INF;
+		for (Y3 = X3; Y3 < MIN(UB, X3+K[2]); Y3++) {
+			tmp = J23(Y3, prd-1);
+			if (tmp < tmpmin) {
+				tmpmin = tmp;
+			}
 		}
-	}
-	if (Ystar <= X2) {
-		return 0;
-	}
-	else {
-		return L1(X2, prd) - tmpmin;
+		set_U23(X3, prd, tmpmin);
 	}
 }
 
-void DP()
+void DP_U2()
 {
-	int prd, X, Y, Ystar;
-	double tmpV, tmpmin, tmp;
+	int prd = 0;
 	for (prd = 1; prd <= period; prd++) {
-		for (X = LB; X <= UB; X++) {
-			tmpV = PCC1(X, prd);
-			tmpmin = INF;
-			for (Y = X; Y <= UB; Y++) {
-				tmp = L1(Y, prd);
-				if (tmp < tmpmin) {
-					tmpmin = tmp;
-					Ystar = Y;
-				}
-			}
-			set_value(prd, X, 0, tmpmin+tmpV);
-			set_base(prd, X, 0, Ystar);
-
-			tmpV = PCC2(X, prd) + PES2(X, prd);
-			tmpmin = INF;
-			for (Y = X; Y <= UB; Y++) {
-				tmp = L2(Y, prd);
-				if (tmp < tmpmin) {
-					tmpmin  = tmp;
-					Ystar = Y;
-				}
-			}
-			set_value(prd, X, 1, tmpmin+tmpV);
-			set_base(prd, X, 1, Ystar);
-		}
+		update_U21(prd);
+		update_U22(prd);
+		update_U23(prd);
 	}
+}
+
+double get_U2(int X[])
+{
+	int res;
+	res = get_U21(X[0], period);
+	res += get_U22(X[1], period);
+	res += get_U23(X[2], period);
+	return res;
 }
 
 void init()
 {
 	//TODO: This function initialize all variables including the value
 	//	function array.
-	//	This part can be changed in order to read data from a file.
 
 	int i;
-	FILE * fp = fopen("2Echelon.dat", "r");
-	fscanf(fp, "%lf%d%lf%lf%d%d%lf%d%d%d", &beta,
-			&period, &h[0], &h[1], &K[0], &K[1],
-			&p, &UB, &LB, &D_len);
+	FILE * fp = fopen("nEchelon.dat", "r");
+	fscanf(fp, "%lf%d%d", &beta, &i, &period);
+	for (i = 0; i < N; i++) {
+		fscanf(fp, "%lf", &h[i]);
+	}
+	for (i = 0; i < N; i++) {
+		fscanf(fp, "%d", &K[i]);
+	}
+	fscanf(fp, "%lf%d%d%d", &p, &UB, &LB, &D_len);
 	for (i = 0; i < D_len; i++) {
 		fscanf(fp, "%d", &D[i]);
-	}
-	for (i = 0; i < D_len; i++) {
-		fscanf(fp, "%lf", &P[i]);
-	}
-	for (i = 0; i < MAX_PERIOD*2; i++) {
-		V[0][i][0] = V[0][i][1] = 0;
-	}
-}
-
-void Eval_Base()
-{
-	int X[2], prd, B[2], Y[2];
-	for (prd = 1; prd <= period; prd++) {
-		for (X[0] = LB; X[0] <= UB; X[0]++) {
-			for (X[1] = X[0]; X[1] <= UB; X[1]++) {
-				B[0] = get_base(prd, X[0], 0);
-				B[1] = get_base(prd, X[1], 1);
-				Y[0] = MIN(B[0], X[0]+K[0]);
-				Y[0] = MIN(Y[0], X[1]);
-				Y[0] = MAX(X[0], Y[0]);
-				Y[1] = MIN(B[1], X[1]+K[1]);
-				Y[1] = MAX(X[1], Y[1]);
-				set_EvV(prd, X, Ev_L(Y, prd)); 
-				if (prd == period) {
-					set_policy(X, Y);
-				}
-			}
-		}
 	}
 }
 
 int main(int argc, const char *argv[])
 {
-	int i, j, k, x[2], X[2];
-
+	int X[3];
 	init();
-
-	DP();
-
-	Eval_Base();
-
-	//TODO: read installation inventory and print the optimal base
-	while (scanf("%d%d", &x[0], &x[1]) != EOF) {
-		X[0] = x[0]; 	X[1] = x[0] + x[1];
-		Ending[0] = get_policy(X, 0);
-		Ending[1] = get_policy(X, 1);
-		printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%lf\n", x[0], x[1],
-			X[0], X[1], Ending[0] - X[0], Ending[1] - X[1],
-			Ending[0], Ending[1], get_EvV(period, X));
+	DP_U1();
+	DP_U2();
+	while(scanf("%d%d%d", &X[0], &X[1], &X[2]) != EOF){
+		printf("%d\t%d\t%d\t", X[0], X[1], X[2]);
+		printf("%.2lf\t", MAX(get_U1(X), get_U2(X)));
 	}
 	return 0;
 }
